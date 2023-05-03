@@ -58,37 +58,49 @@
 <script setup>
 // import
 
-import { ref } from "vue";
-import { v4 as uuidv4 } from "uuid";
+import { ref, onMounted } from "vue";
+import {
+  collection,
+  onSnapshot,
+  addDoc,
+  deleteDoc,
+  doc,
+  updateDoc,
+} from "firebase/firestore";
+import { db } from "@/firebase";
+
+//firebase ref
+
+const todosCollectionRef = collection(db, "todo");
 
 //work
 
 const todos = ref([
-  {
-    id: "1",
-    content: "Прогулка в парке",
-    done: false,
-  },
-  {
-    id: "2",
-    content: "Учеба",
-    done: false,
-  },
-  {
-    id: "3",
-    content: "Тренировка в зале",
-    done: true,
-  },
-  {
-    id: "4",
-    content: "Отправить дз преподу",
-    done: false,
-  },
-  {
-    id: "5",
-    content: "Просмотр футбола в баре",
-    done: true,
-  },
+  // {
+  //   id: "1",
+  //   content: "Прогулка в парке",
+  //   done: false,
+  // },
+  // {
+  //   id: "2",
+  //   content: "Учеба",
+  //   done: false,
+  // },
+  // {
+  //   id: "3",
+  //   content: "Тренировка в зале",
+  //   done: true,
+  // },
+  // {
+  //   id: "4",
+  //   content: "Отправить дз преподу",
+  //   done: false,
+  // },
+  // {
+  //   id: "5",
+  //   content: "Просмотр футбола в баре",
+  //   done: true,
+  // },
 ]);
 
 //add task
@@ -96,27 +108,45 @@ const todos = ref([
 const newContent = ref("");
 
 const addTask = () => {
-  const newTask = {
-    id: uuidv4(),
+  addDoc(todosCollectionRef, {
     content: newContent.value,
-    done: true,
-  };
-  todos.value.unshift(newTask);
+    done: false,
+  });
   newContent.value = "";
 };
 
 //delete Task
 
 const deleteTask = (id) => {
-  todos.value = todos.value.filter((todo) => todo.id !== id);
+  deleteDoc(doc(todosCollectionRef, id));
 };
 
 //finish Task
 
 const finishTask = (id) => {
   const index = todos.value.findIndex((todo) => todo.id === id);
-  todos.value[index].done = !todos.value[index].done;
+
+  updateDoc(doc(todosCollectionRef, id), {
+    done: !todos.value[index].done,
+  });
 };
+
+//get tasks in db
+
+onMounted(() => {
+  onSnapshot(todosCollectionRef, (querySnapshot) => {
+    const fbTodos = [];
+    querySnapshot.forEach((doc) => {
+      const todo = {
+        id: doc.id,
+        content: doc.data().content,
+        done: doc.data().done,
+      };
+      fbTodos.push(todo);
+    });
+    todos.value = fbTodos;
+  });
+});
 </script>
 
 <style>
@@ -137,8 +167,5 @@ const finishTask = (id) => {
 
 .line-through {
   text-decoration: line-through;
-}
-
-.column {
 }
 </style>
