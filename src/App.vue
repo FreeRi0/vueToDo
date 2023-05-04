@@ -1,4 +1,16 @@
 <template>
+  <div id="todoStatus">
+    <div id="totalComp">
+      <span id="totalCompletedTodos" class="countTasks">{{
+        completedTodo
+      }}</span
+      ><span class="countName">Выполненно</span>
+    </div>
+    <div id="totalNum">
+      <span id="totalTodos" class="countTasks">{{ todos.length }}</span
+      ><span class="countName">Всего</span>
+    </div>
+  </div>
   <div class="wrapper-todo">
     <h1 class="todo-title">To Do List</h1>
     <form @submit.prevent="addTask">
@@ -58,7 +70,7 @@
 <script setup>
 // import
 
-import { ref, onMounted } from "vue";
+import { ref, onMounted, computed } from "vue";
 import {
   collection,
   onSnapshot,
@@ -66,12 +78,15 @@ import {
   deleteDoc,
   doc,
   updateDoc,
+  query,
+  orderBy,
 } from "firebase/firestore";
 import { db } from "@/firebase";
 
 //firebase ref
 
 const todosCollectionRef = collection(db, "todo");
+const todosCollectionQuery = query(todosCollectionRef, orderBy("date", "desc"));
 
 //work
 
@@ -111,6 +126,7 @@ const addTask = () => {
   addDoc(todosCollectionRef, {
     content: newContent.value,
     done: false,
+    date: Date.now(),
   });
   newContent.value = "";
 };
@@ -134,7 +150,7 @@ const finishTask = (id) => {
 //get tasks in db
 
 onMounted(() => {
-  onSnapshot(todosCollectionRef, (querySnapshot) => {
+  onSnapshot(todosCollectionQuery, (querySnapshot) => {
     const fbTodos = [];
     querySnapshot.forEach((doc) => {
       const todo = {
@@ -146,6 +162,10 @@ onMounted(() => {
     });
     todos.value = fbTodos;
   });
+});
+
+const completedTodo = computed(() => {
+  return todos.value.filter((todo) => todo.done).length;
 });
 </script>
 
@@ -167,5 +187,21 @@ onMounted(() => {
 
 .line-through {
   text-decoration: line-through;
+}
+
+#todoStatus {
+  display: flex;
+  justify-content: space-evenly;
+}
+
+.countTasks {
+  color: #fff;
+  font-size: 32px;
+  margin-right: 12px;
+}
+
+.countName {
+  color: #fff;
+  font-size: 24px;
 }
 </style>
